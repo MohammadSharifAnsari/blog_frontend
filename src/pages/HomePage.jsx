@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { getAllPosts, searchPosts } from '../store/postSlice.js';
-import { Heart, Eye, MessageCircle, Bookmark, Search } from 'lucide-react';
+import { Heart, Eye, MessageCircle, Bookmark, Search, ChevronDown, Check } from 'lucide-react';
 import { likePost } from '../store/postSlice.js';
 import { getBookmarks, bookmarkPost } from '../store/authSlice';
+import { getAllCategories } from '../store/categorySlice';
+import { getAllTags } from '../store/tagSlice';
 import BlogLayout from '../Layout/BlogLayout';
 
 const HomePage = () => {
@@ -19,10 +21,26 @@ const HomePage = () => {
   const { user, bookmarks, isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const { categories: categoriesState } = useSelector((state) => state.categories || {});
+  const { tags: tagsState } = useSelector((state) => state.tags || {});
+  const categories = Array.isArray(categoriesState) ? categoriesState : [];
+  const tags = Array.isArray(tagsState) ? tagsState : [];
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [openCat, setOpenCat] = useState(false);
+  const [openTag, setOpenTag] = useState(false);
 
   useEffect(() => {
+    dispatch(getAllCategories());
+    dispatch(getAllTags());
     if (searchQuery && searchQuery.trim().length > 0) {
-      dispatch(searchPosts({ search: searchQuery.trim(), page, limit: 9 }));
+      dispatch(searchPosts({
+        search: searchQuery.trim(),
+        page,
+        limit: 9,
+        category: selectedCategories.join(','),
+        tag: selectedTags.join(',')
+      }));
     } else {
       dispatch(getAllPosts({ page, limit: 9 }));
     }
@@ -41,7 +59,10 @@ const HomePage = () => {
     }
     await dispatch(likePost(postId));
     if (searchQuery && searchQuery.trim().length > 0) {
-      await dispatch(searchPosts({ search: searchQuery.trim(), page, limit: 9 }));
+      await dispatch(searchPosts({
+        search: searchQuery.trim(), page, limit: 9,
+        category: selectedCategories.join(','), tag: selectedTags.join(',')
+      }));
     } else {
       await dispatch(getAllPosts({ page, limit: 9 }));
     }
@@ -61,7 +82,10 @@ const HomePage = () => {
     const handler = setTimeout(() => {
       if (searchQuery && searchQuery.trim().length > 0) {
         setPage(1);
-        dispatch(searchPosts({ search: searchQuery.trim(), page: 1, limit: 9 }));
+        dispatch(searchPosts({
+          search: searchQuery.trim(), page: 1, limit: 9,
+          category: selectedCategories.join(','), tag: selectedTags.join(',')
+        }));
       } else {
         setPage(1);
         dispatch(getAllPosts({ page: 1, limit: 9 }));
@@ -69,7 +93,18 @@ const HomePage = () => {
     }, 400);
     return () => clearTimeout(handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, dispatch]);
+  }, [searchQuery, selectedCategories, selectedTags, dispatch]);
+
+  const toggleCategory = (id) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+  const toggleTag = (id) => {
+    setSelectedTags((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const isBookmarked = (postId) => {
     return bookmarks.some((bookmark) => bookmark._id === postId);
@@ -86,7 +121,7 @@ const HomePage = () => {
     return (
    <BlogLayout>
       <div className="max-w-6xl mx-auto">
-        {/* Search Bar */}
+        {/* Search Bar + Filters */}
         <div className="mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -97,6 +132,63 @@ const HomePage = () => {
               placeholder="Search posts..."
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {/* Category dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenCat((o) => !o)}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              >
+                Categories ({selectedCategories.length})
+                <ChevronDown size={16} />
+              </button>
+              {openCat && (
+                <div className="absolute z-10 mt-2 w-60 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-64 overflow-auto">
+                  {categories.map((c) => (
+                    <label key={c._id} className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-50 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(c._id)}
+                        onChange={() => toggleCategory(c._id)}
+                        className="rounded border-gray-300 text-black focus:ring-black"
+                      />
+                      <span className="text-sm text-gray-800">{c.name}</span>
+                      {selectedCategories.includes(c._id) && <Check size={14} className="ml-auto text-green-600" />}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tag dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenTag((o) => !o)}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              >
+                Tags ({selectedTags.length})
+                <ChevronDown size={16} />
+              </button>
+              {openTag && (
+                <div className="absolute z-10 mt-2 w-60 bg-white border border-gray-200 rounded-lg shadow-lg p-2 max-h-64 overflow-auto">
+                  {tags.map((t) => (
+                    <label key={t._id} className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-50 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.includes(t._id)}
+                        onChange={() => toggleTag(t._id)}
+                        className="rounded border-gray-300 text-black focus:ring-black"
+                      />
+                      <span className="text-sm text-gray-800">{t.name}</span>
+                      {selectedTags.includes(t._id) && <Check size={14} className="ml-auto text-green-600" />}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
