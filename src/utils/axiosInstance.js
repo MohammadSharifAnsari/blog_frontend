@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+// Build base URL safely from env with sensible defaults
+const API_BASE = (import.meta?.env?.VITE_APP_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_PREFIX = (import.meta?.env?.VITE_API_PREFIX || '/api/v1').startsWith('/')
+  ? (import.meta.env.VITE_API_PREFIX || '/api/v1')
+  : `/${import.meta.env.VITE_API_PREFIX || 'api/v1'}`;
+// console.log('[blog_frontend/src/utils/axiosInstance.js]:',API_BASE,API_PREFIX);
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5500/api/v1',
+  baseURL: `${API_BASE}${API_PREFIX}`,
   withCredentials: true,
 });
 
@@ -29,4 +35,24 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+
+// import axios from "axios";
+
+
+// // server ka url hai base url
+// // console.log("pricess>>");
+
+// const BASE_URL=import.meta.env.VITE_APP_BASE_URL;
+// // const BASE_URL='http:// localhost:5014/api/v1';
+
+// // axois.create() create the instance of axios
+// const axiosInstance=axios.create();
+
+// axiosInstance.defaults.baseURL=BASE_URL;
+// axiosInstance.defaults.withCredentials=true;
+
+// // you can read axios.intance
+// export default axiosInstance;
+
+
 

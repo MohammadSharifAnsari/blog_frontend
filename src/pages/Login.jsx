@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../store/authSlice';
-
+import BlogLayout from '../Layout/BlogLayout.jsx';
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const dispatch = useDispatch();
@@ -22,6 +22,7 @@ const Login = () => {
   };
 
   return (
+    <BlogLayout>
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">Login</h2>
@@ -63,13 +64,22 @@ const Login = () => {
             </Link>
           </div>
 
+          <div className=' group border-1 border-black rounded-lg '>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            className="w-full  text-black py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
             {loading ? 'Logging in...' : 'Login'}
           </button>
+            </div>
+         
+
+          {/* <div className=' bg-red-600'>
+
+          <button className='bg-transparent'>i am dyqsdgyuqw</button>
+          </div> */}
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
@@ -80,6 +90,7 @@ const Login = () => {
         </p>
       </div>
     </div>
+    </BlogLayout>
   );
 };
 

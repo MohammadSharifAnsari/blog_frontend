@@ -152,11 +152,13 @@ const SinglePostView = () => {
             {/* Categories and Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
               {currentPost.categories?.map((category) => (
+              
                 <span
                   key={category._id}
                   className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
                 >
                   {category.name}
+                  
                 </span>
               ))}
               {currentPost.tags?.map((tag) => (
@@ -199,7 +201,7 @@ const SinglePostView = () => {
               {canEdit() && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/edit-post/${id}`)}
+                    onClick={() => navigate(`/posts/${id}/edit`)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
                     <Edit size={20} />
@@ -249,6 +251,15 @@ const SinglePostView = () => {
           </div>
         </article>
 
+        {/* Edit Post Link */}
+        {canEdit() && (
+          <div style={{ marginTop: 12 }}>
+            <Link to={`/posts/${currentPost._id || currentPost.id}/edit`} className="text-blue-600 hover:underline">
+              Edit Post
+            </Link>
+          </div>
+        )}
+
         {/* Comments Section */}
         <div className="mt-8 bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
@@ -266,7 +277,7 @@ const SinglePostView = () => {
               />
               <button
                 type="submit"
-                className="bg-black text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                className="bg-black text-black px-6 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
                 Post Comment
               </button>

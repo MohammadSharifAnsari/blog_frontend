@@ -59,7 +59,7 @@ const AdminCategories = () => {
           <h1 className="text-3xl font-bold text-gray-900">Manage Categories</h1>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-800 transition-colors"
           >
             <Plus size={20} />
             <span>Add Category</span>
@@ -165,7 +165,7 @@ const AdminCategories = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-black text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    className="flex-1 bg-white text-black py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
                     {editingCategory ? 'Update' : 'Create'}
                   </button>

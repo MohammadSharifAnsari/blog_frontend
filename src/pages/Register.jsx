@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../store/authSlice';
+import BlogLayout from '../Layout/BlogLayout.jsx';
 
 const Register = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,15 +31,20 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
+    
     e.preventDefault();
+    setIsLoading(true);
     const result = await dispatch(registerUser(formData));
     if (registerUser.fulfilled.match(result)) {
+      setIsLoading(false);
       navigate('/');
     }
+    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
+    <BlogLayout>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4 w-full">
       <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">Register</h2>
         
@@ -109,12 +116,16 @@ const Register = () => {
             />
           </div>
 
+         <div className=' border-1 border-black rounded-lg '>
+
           <button
             type="submit"
-            className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Register
+            className="w-full bg-black text-black py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+            >
+            {isLoading?'Creating account ...':'Register'}
           </button>
+            </div>
+
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
@@ -125,6 +136,7 @@ const Register = () => {
         </p>
       </div>
     </div>
+    </BlogLayout>
   );
 };
 

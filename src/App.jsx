@@ -9,13 +9,14 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import HomePage from './pages/HomePage';
+import TakeNewPassword from './pages/TakeNewPassword';
 
 // Protected pages
 import CreatePost from './pages/CreatePost';
 import SinglePostView from './pages/SinglePostView';
 import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
-
+import EditPost from './pages/EditPost.jsx';
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -36,11 +37,13 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path='/reset-password/:resetPasswordToken' element={<TakeNewPassword/>} ></Route>
 
       {/* Main Routes */}
       <Route path="/" element={<HomePage />} />
       <Route path="/post/:id" element={<SinglePostView />} />
       <Route path="/create-post" element={<CreatePost />} />
+       <Route path="/posts/:id/edit" element={<EditPost />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/bookmarks" element={<Bookmarks />} />
 

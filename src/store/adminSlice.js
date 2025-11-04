@@ -50,6 +50,29 @@ export const getAllComments = createAsyncThunk(
     }
   }
 );
+export const resetPassword=createAsyncThunk("auth/reset-password",async(data)=>{
+
+    try{
+
+        const res=axiosInstance.post(`user/reset-password/${data[0]}`,data[1]);//data[0]=>token data[1]=newpasssword
+        
+        toast.promise(res,{
+            loading:"reseting password...",
+            success:(state)=>{
+                return state?.data?.message;
+            },
+            error:"Failed to reset password"
+        })
+        return (await res).data;
+        
+    }
+    catch(err){
+        toast.error(err?.responce?.data?.message);
+        
+    }
+
+})
+
 
 const adminSlice = createSlice({
   name: 'admin',

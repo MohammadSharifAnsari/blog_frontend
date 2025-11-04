@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { getAllPosts } from '../store/postSlice.js';
+import { getAllPosts, searchPosts } from '../store/postSlice.js';
 import { Heart, Eye, MessageCircle, Bookmark, Search } from 'lucide-react';
-import { likePost, bookmarkPost } from '../store/postSlice.js';
-import { getBookmarks } from '../store/authSlice';
+import { likePost } from '../store/postSlice.js';
+import { getBookmarks, bookmarkPost } from '../store/authSlice';
 import BlogLayout from '../Layout/BlogLayout';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const { posts, loading, pagination } = useSelector((state) => state.posts);
+  const {
+    posts: postsState,
+    loading = false,
+    pagination: paginationState,
+  } = useSelector((state) => state.posts || {});
+  const posts = Array.isArray(postsState) ? postsState : [];
+  const pagination = paginationState || { currentPage: 1, totalPages: 1, totalPosts: 0 };
   const { user, bookmarks, isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    dispatch(getAllPosts({ page, limit: 9 }));
+    if (searchQuery && searchQuery.trim().length > 0) {
+      dispatch(searchPosts({ search: searchQuery.trim(), page, limit: 9 }));
+    } else {
+      dispatch(getAllPosts({ page, limit: 9 }));
+    }
   }, [dispatch, page]);
 
   useEffect(() => {
@@ -30,7 +40,11 @@ const HomePage = () => {
       return;
     }
     await dispatch(likePost(postId));
-    await dispatch(getAllPosts({ page, limit: 9 }));
+    if (searchQuery && searchQuery.trim().length > 0) {
+      await dispatch(searchPosts({ search: searchQuery.trim(), page, limit: 9 }));
+    } else {
+      await dispatch(getAllPosts({ page, limit: 9 }));
+    }
   };
 
   const handleBookmark = async (postId) => {
@@ -41,6 +55,21 @@ const HomePage = () => {
     await dispatch(bookmarkPost(postId));
     await dispatch(getBookmarks());
   };
+
+  // Debounced search on query change
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchQuery && searchQuery.trim().length > 0) {
+        setPage(1);
+        dispatch(searchPosts({ search: searchQuery.trim(), page: 1, limit: 9 }));
+      } else {
+        setPage(1);
+        dispatch(getAllPosts({ page: 1, limit: 9 }));
+      }
+    }, 400);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, dispatch]);
 
   const isBookmarked = (postId) => {
     return bookmarks.some((bookmark) => bookmark._id === postId);
@@ -183,7 +212,7 @@ const HomePage = () => {
         )}
 
         {/* Pagination */}
-        {!loading && pagination.totalPages > 1 && (
+        {!loading && (pagination?.totalPages || 0) > 1 && (
           <div className="flex justify-center gap-2 mt-8">
             <button
               onClick={() => setPage((prev) => Math.max(prev - 1, 1))}

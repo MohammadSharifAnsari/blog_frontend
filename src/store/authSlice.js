@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstance.js';
 import toast from 'react-hot-toast';
 
 // Async thunks
@@ -14,7 +14,7 @@ export const registerUser = createAsyncThunk(
       if (userData.avatar) {
         formData.append('avatar', userData.avatar);
       }
-
+console.log(`[blog_frontend/src/store/authSlice.js] axiosInstance.defaults.baseURL>>${axiosInstance.defaults.baseURL}`);
       const response = await axiosInstance.post('/user/register', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -147,8 +147,8 @@ export const getBookmarks = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: null,
-    isAuthenticated: false,
+    user: localStorage.getItem("data")!=="undefined"?JSON.parse(localStorage.getItem("data")) :{},
+    isAuthenticated:localStorage.getItem("isLoggedIn")|| false,
     loading: false,
     error: null,
     bookmarks: [],
@@ -166,6 +166,9 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
+            localStorage.setItem("data", JSON.stringify(action?.payload?.user));
+            localStorage.setItem("isLoggedIn", true);
+            localStorage.setItem("role", action?.payload?.user?.role);
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
@@ -182,6 +185,9 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
+          localStorage.setItem("data", JSON.stringify(action?.payload?.user));
+          localStorage.setItem("isLoggedIn", true);
+          localStorage.setItem("role", action?.payload?.user?.role);
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
@@ -194,6 +200,7 @@ const authSlice = createSlice({
       })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
+         localStorage.clear();
         state.user = null;
         state.isAuthenticated = false;
         state.bookmarks = [];
@@ -204,6 +211,12 @@ const authSlice = createSlice({
         state.loading = true;
       })
       .addCase(getProfile.fulfilled, (state, action) => {
+          if(!action?.payload?.user){
+                    return ;
+          }
+        localStorage.setItem("data", JSON.stringify(action?.payload?.user));
+        localStorage.setItem("isLoggedIn", true);
+        localStorage.setItem("role", action?.payload?.user?.role);
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;

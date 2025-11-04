@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateUserProfile, changePassword } from '../store/authSlice';
+import { updateUserProfile, changePassword ,getProfile} from '../store/authSlice';
 import { Upload } from 'lucide-react';
 import BlogLayout from '../Layout/BlogLayout';
+import { set } from 'react-hook-form';
 
 const Profile = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state) => state.auth);
 
@@ -40,17 +42,22 @@ const Profile = () => {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     await dispatch(updateUserProfile({
       id: user?._id,
       fullName: formData.fullName,
       avatar: formData.avatar,
     }));
+    await dispatch(getProfile());
+    setIsLoading(false);
   };
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('New passwords do not match');
+       setIsLoading(false);
       return;
     }
     await dispatch(changePassword({
@@ -58,6 +65,7 @@ const Profile = () => {
       newPassword: passwordData.newPassword,
     }));
     setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+     setIsLoading(false);
   };
 
   return (
@@ -173,9 +181,9 @@ const Profile = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Updating...' : 'Update Profile'}
+                {isLoading ? 'Updating...' : 'Update Profile'}
               </button>
             </form>
           )}
@@ -224,13 +232,14 @@ const Profile = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
               </div>
-
+              
+             
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Changing...' : 'Change Password'}
+                {isLoading ? 'Changing...' : 'Change Password'}
               </button>
             </form>
           )}

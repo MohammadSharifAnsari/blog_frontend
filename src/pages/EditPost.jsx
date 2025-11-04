@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { createPost } from '../store/postSlice';
-import { getAllCategories } from '../store/categorySlice.js';
-import { getAllTags } from '../store/tagSlice.js';
-import { Image as ImageIcon, X } from 'lucide-react';
 import BlogLayout from '../Layout/BlogLayout';
+import { getAllCategories } from '../store/categorySlice';
+import { getAllTags } from '../store/tagSlice';
+import { getPostById, updatePost } from '../store/postSlice';
+import { Image as ImageIcon, X } from 'lucide-react';
 
-const CreatePost = () => {
-  const dispatch = useDispatch();
+export default function EditPost() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const { categories: categoriesState } = useSelector((state) => state.categories || {});
   const { tags: tagsState } = useSelector((state) => state.tags || {});
   const categories = Array.isArray(categoriesState) ? categoriesState : [];
   const tags = Array.isArray(tagsState) ? tagsState : [];
-  const { loading } = useSelector((state) => state.posts);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { currentPost, loading } = useSelector((state) => state.posts || {});
+  const { isAuthenticated } = useSelector((state) => state.auth || {});
 
   const [formData, setFormData] = useState({
     title: '',
@@ -29,6 +31,7 @@ const CreatePost = () => {
 
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [mediaPreviews, setMediaPreviews] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,32 +40,52 @@ const CreatePost = () => {
     }
     dispatch(getAllCategories());
     dispatch(getAllTags());
-  }, [dispatch, isAuthenticated, navigate]);
+    dispatch(getPostById(id));
+  }, [dispatch, isAuthenticated, navigate, id]);
+
+  useEffect(() => {
+    if (currentPost?._id === id) {
+      setFormData({
+        title: currentPost.title || '',
+        content: currentPost.content || '',
+        avatar: null,
+        media: [],
+        categories: (currentPost.categories || []).map((c) => c._id || c),
+        tags: (currentPost.tags || []).map((t) => t._id || t),
+        isPublished: currentPost.isPublished ?? true,
+      });
+      setAvatarPreview(currentPost.avatar?.secure_url || null);
+      setMediaPreviews((currentPost.media || []).map((m) => m.secure_url));
+    }
+  }, [currentPost, id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    });
+    }));
   };
 
   const handleFileChange = (e, field) => {
     const files = Array.from(e.target.files);
-    
     if (field === 'avatar') {
       const file = files[0];
-      setFormData({ ...formData, avatar: file });
+      setFormData((prev) => ({ ...prev, avatar: file }));
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => setAvatarPreview(reader.result);
         reader.readAsDataURL(file);
       }
     } else if (field === 'media') {
-      setFormData({ ...formData, media: files });
+      setFormData((prev) => ({ ...prev, media: files }));
+      const previews = [];
       files.forEach((file) => {
         const reader = new FileReader();
-        reader.onloadend = () => setMediaPreviews((prev) => [...prev, reader.result]);
+        reader.onloadend = () => {
+          previews.push(reader.result);
+          if (previews.length === files.length) setMediaPreviews((prev) => [...prev, ...previews]);
+        };
         reader.readAsDataURL(file);
       });
     }
@@ -70,55 +93,62 @@ const CreatePost = () => {
 
   const removeMedia = (index) => {
     setMediaPreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData({
-      ...formData,
-      media: formData.media.filter((_, i) => i !== index),
-    });
+    setFormData((prev) => ({
+      ...prev,
+      media: prev.media.filter((_, i) => i !== index),
+    }));
   };
 
   const handleCategoryChange = (categoryId, checked) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       categories: checked
-        ? [...formData.categories, categoryId]
-        : formData.categories.filter((id) => id !== categoryId),
-    });
+        ? [...prev.categories, categoryId]
+        : prev.categories.filter((id) => id !== categoryId),
+    }));
   };
 
   const handleTagChange = (tagId, checked) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       tags: checked
-        ? [...formData.tags, tagId]
-        : formData.tags.filter((id) => id !== tagId),
-    });
+        ? [...prev.tags, tagId]
+        : prev.tags.filter((id) => id !== tagId),
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitData = {
-      ...formData,
-      categories: formData.categories.join(','),
-      tags: formData.tags.join(','),
-    };
-    
-    const result = await dispatch(createPost(submitData));
-    if (createPost.fulfilled.match(result)) {
-      navigate('/');
+    try {
+      setSubmitting(true);
+      const submitData = {
+        title: formData.title,
+        content: formData.content,
+        isPublished: formData.isPublished,
+        categories: formData.categories.join(','),
+        tags: formData.tags.join(','),
+      };
+      if (formData.avatar) submitData.avatar = formData.avatar;
+      if (formData.media?.length) submitData.media = formData.media;
+
+      const result = await dispatch(updatePost({ id, postData: submitData }));
+      if (updatePost.fulfilled.match(result)) {
+        navigate(`/post/${id}`);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  if (!currentPost && loading) return <div>Loading post...</div>;
   return (
     <BlogLayout>
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Post</h1>
-        
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Edit Post</h1>
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
             <input
               type="text"
               name="title"
@@ -130,11 +160,8 @@ const CreatePost = () => {
             />
           </div>
 
-          {/* Content */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Content
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
             <textarea
               name="content"
               value={formData.content}
@@ -146,11 +173,8 @@ const CreatePost = () => {
             />
           </div>
 
-          {/* Avatar */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Featured Image
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Featured Image</label>
             <div className="flex items-center gap-4">
               {avatarPreview && (
                 <div className="relative w-32 h-32 rounded-lg overflow-hidden">
@@ -170,11 +194,8 @@ const CreatePost = () => {
             </div>
           </div>
 
-          {/* Media */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Additional Media
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Additional Media</label>
             <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 inline-block">
               <ImageIcon size={20} />
               <span>Upload Media</span>
@@ -204,11 +225,8 @@ const CreatePost = () => {
             )}
           </div>
 
-          {/* Categories */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categories
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
             <div className="grid grid-cols-2 gap-3">
               {categories.map((category) => (
                 <label key={category._id} className="flex items-center gap-2">
@@ -224,11 +242,8 @@ const CreatePost = () => {
             </div>
           </div>
 
-          {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
             <div className="grid grid-cols-3 gap-3">
               {tags.map((tag) => (
                 <label key={tag._id} className="flex items-center gap-2">
@@ -244,7 +259,6 @@ const CreatePost = () => {
             </div>
           </div>
 
-          {/* Published */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -253,21 +267,20 @@ const CreatePost = () => {
               onChange={handleChange}
               className="rounded border-gray-300 text-black focus:ring-black"
             />
-            <label className="text-sm font-medium text-gray-700">Publish immediately</label>
+            <label className="text-sm font-medium text-gray-700">Published</label>
           </div>
 
-          {/* Submit */}
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="flex-1 bg-black text-black py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create Post'}
+              {submitting ? 'Updating...' : 'Update Post'}
             </button>
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate(`/post/${id}`)}
               className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-black"
             >
               Cancel
@@ -277,7 +290,4 @@ const CreatePost = () => {
       </div>
     </BlogLayout>
   );
-};
-
-export default CreatePost;
-
+}
